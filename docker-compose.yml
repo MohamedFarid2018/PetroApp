@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: "8080"
+      NODE_ENV: "production"
+    restart: unless-stopped
+
+  # Isolated test runner — exits after the suite finishes.
+  # Usage: docker compose --profile test run --rm test
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    environment:
+      NODE_ENV: "test"
+    profiles:
+      - test
