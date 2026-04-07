@@ -1,0 +1,148 @@
+openapi: "3.0.3"
+info:
+  title: Petro Transfer Ingestion API
+  description: Idempotent ingestion and reconciliation of station transfer events.
+  version: "1.0.0"
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+
+paths:
+  /transfers:
+    post:
+      summary: Ingest a batch of transfer events
+      description: |
+        Accepts a batch of transfer events and stores them idempotently by `event_id`.
+        **Validation strategy: fail-fast** — if any event fails validation the entire
+        batch is rejected with HTTP 400 and nothing is stored.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InsertRequest"
+            examples:
+              typical:
+                summary: Mixed batch
+                value:
+                  events:
+                    - event_id: "evt-001"
+                      station_id: "S1"
+                      amount: 100.50
+                      status: "approved"
+                      created_at: "2026-02-19T10:00:00Z"
+                    - event_id: "evt-002"
+                      station_id: "S1"
+                      amount: 50.00
+                      status: "pending"
+                      created_at: "2026-02-19T11:00:00Z"
+      responses:
+        "200":
+          description: Batch processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InsertResponse"
+              example:
+                inserted: 1
+                duplicates: 1
+        "400":
+          description: Validation error (fail-fast)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "events.1.amount: amount must be non-negative"
+
+  /stations/{station_id}/summary:
+    get:
+      summary: Reconciliation summary for a station
+      description: |
+        `events_count` — all stored events for the station (any status).
+        `total_approved_amount` — sum of amounts where `status == "approved"` only.
+        Returns a zero-total summary for unknown stations (not 404).
+      parameters:
+        - name: station_id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "S1"
+      responses:
+        "200":
+          description: Station summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StationSummary"
+              example:
+                station_id: "S1"
+                total_approved_amount: 450.25
+                events_count: 12
+
+components:
+  schemas:
+    TransferEvent:
+      type: object
+      required: [event_id, station_id, amount, status, created_at]
+      properties:
+        event_id:
+          type: string
+          example: "evt-001"
+        station_id:
+          type: string
+          example: "S1"
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          example: 100.50
+        status:
+          type: string
+          description: Only "approved" contributes to totals. Other values are stored but not aggregated.
+          example: "approved"
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-02-19T10:00:00Z"
+
+    InsertRequest:
+      type: object
+      required: [events]
+      properties:
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransferEvent"
+
+    InsertResponse:
+      type: object
+      properties:
+        inserted:
+          type: integer
+          example: 7
+        duplicates:
+          type: integer
+          example: 3
+
+    StationSummary:
+      type: object
+      properties:
+        station_id:
+          type: string
+          example: "S1"
+        total_approved_amount:
+          type: number
+          example: 450.25
+        events_count:
+          type: integer
+          example: 12
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "events.0.event_id: event_id is required"
