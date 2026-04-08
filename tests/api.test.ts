@@ -167,6 +167,10 @@ test('validation — missing required fields return 400', async () => {
       body: { events: [] },
     },
     {
+      name: 'batch exceeds 1000 events',
+      body: { events: Array.from({ length: 1001 }, (_, i) => event(`e${i}`, 'S1', 'approved', 1)) },
+    },
+    {
       name: 'missing event_id',
       body: batch({ station_id: 'S1', amount: 10, status: 'approved', created_at: '2026-02-19T10:00:00Z' }),
     },

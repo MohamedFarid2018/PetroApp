@@ -6,7 +6,7 @@ import { makeStationHandler } from './handlers/stations';
 export function createApp(store: IStore) {
   const app = express();
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // Basic request logging
   app.use((req, _res, next) => {

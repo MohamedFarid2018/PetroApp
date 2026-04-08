@@ -14,7 +14,8 @@ const eventSchema = z.object({
 export const insertRequestSchema = z.object({
   events: z
     .array(eventSchema, { required_error: '"events" field is required' })
-    .min(1, 'events must not be empty'),
+    .min(1, 'events must not be empty')
+    .max(1000, 'events must not exceed 1000 items per request'),
 });
 
 export type InsertRequestInput = z.infer<typeof insertRequestSchema>;
