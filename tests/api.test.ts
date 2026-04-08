@@ -187,6 +187,10 @@ test('validation — missing required fields return 400', async () => {
       body: batch({ event_id: 'e1', station_id: 'S1', amount: 10, status: 'approved', created_at: 'not-a-date' }),
     },
     {
+      name: 'amount is a string instead of number',
+      body: batch({ event_id: 'e1', station_id: 'S1', amount: '100', status: 'approved', created_at: '2026-02-19T10:00:00Z' }),
+    },
+    {
       name: 'missing events field',
       body: { data: [] },
     },
