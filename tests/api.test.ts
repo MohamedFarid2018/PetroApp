@@ -163,6 +163,10 @@ test('non-approved statuses do not contribute to total_approved_amount', async (
 test('validation — missing required fields return 400', async () => {
   const cases = [
     {
+      name: 'empty events array',
+      body: { events: [] },
+    },
+    {
       name: 'missing event_id',
       body: batch({ station_id: 'S1', amount: 10, status: 'approved', created_at: '2026-02-19T10:00:00Z' }),
     },

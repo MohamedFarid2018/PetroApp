@@ -12,7 +12,9 @@ const eventSchema = z.object({
 });
 
 export const insertRequestSchema = z.object({
-  events: z.array(eventSchema, { required_error: '"events" field is required' }),
+  events: z
+    .array(eventSchema, { required_error: '"events" field is required' })
+    .min(1, 'events must not be empty'),
 });
 
 export type InsertRequestInput = z.infer<typeof insertRequestSchema>;
