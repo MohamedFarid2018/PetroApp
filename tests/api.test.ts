@@ -203,9 +203,21 @@ test('validation — missing required fields return 400', async () => {
   }
 });
 
-// ---- Test 8: mixed batch — partial duplicates ----
+// ---- Test 8: wrong Content-Type returns 415 ----
 
-test('mixed batch returns correct split between inserted and duplicates', async () => {
+test('POST /transfers without Content-Type: application/json returns 415', async () => {
+  const res = await request(server)
+    .post('/transfers')
+    .set('Content-Type', 'text/plain')
+    .send('{"events":[]}');
+
+  expect(res.status).toBe(415);
+  expect(res.body.error).toMatch(/application\/json/);
+});
+
+// ---- Test 9: mixed batch — partial duplicates ----
+
+test('mixed batch returns correct split between inserted and duplicates', async () => {  // Test 9
   const r1 = await request(server).post('/transfers').send(
     batch(event('e1', 'S1', 'approved', 10), event('e2', 'S1', 'approved', 20)),
   );

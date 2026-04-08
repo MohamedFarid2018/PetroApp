@@ -8,6 +8,15 @@ export function createApp(store: IStore) {
 
   app.use(express.json({ limit: '10mb' }));
 
+  // Reject POST requests that are not JSON before they reach handlers.
+  app.use((req, res, next) => {
+    if (req.method === 'POST' && !req.is('application/json')) {
+      res.status(415).json({ error: 'Content-Type must be application/json' });
+      return;
+    }
+    next();
+  });
+
   // Basic request logging
   app.use((req, _res, next) => {
     console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
