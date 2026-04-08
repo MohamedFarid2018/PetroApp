@@ -215,9 +215,31 @@ test('POST /transfers without Content-Type: application/json returns 415', async
   expect(res.body.error).toMatch(/application\/json/);
 });
 
-// ---- Test 9: mixed batch — partial duplicates ----
+// ---- Test 9: intra-batch duplicate event_id ----
+//
+// The spec says events can arrive duplicated across requests. The same rule
+// applies within a single batch: the first occurrence wins and subsequent
+// occurrences of the same event_id in the same batch are counted as duplicates.
 
-test('mixed batch returns correct split between inserted and duplicates', async () => {  // Test 9
+test('intra-batch duplicate event_id: first occurrence wins, rest are duplicates', async () => {
+  const res = await request(server).post('/transfers').send(
+    batch(
+      event('e1', 'S1', 'approved', 100),
+      event('e1', 'S1', 'approved', 999), // same event_id, different amount — must be ignored
+    ),
+  );
+  expect(res.status).toBe(200);
+  expect(res.body).toEqual({ inserted: 1, duplicates: 1 });
+
+  // Only the first occurrence's amount should be stored.
+  const s = await request(server).get('/stations/S1/summary');
+  expect(s.body.total_approved_amount).toBe(100);
+  expect(s.body.events_count).toBe(1);
+});
+
+// ---- Test 10: mixed batch — partial duplicates ----
+
+test('mixed batch returns correct split between inserted and duplicates', async () => {  // Test 10
   const r1 = await request(server).post('/transfers').send(
     batch(event('e1', 'S1', 'approved', 10), event('e2', 'S1', 'approved', 20)),
   );
